@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🌿 Sustainable Farming AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background: linear-gradient(to right, #e9f5ec, #f1f8f4);
+      color: #333;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 30px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #2d6a4f;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+      color: #344e41;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    button {
+      margin-top: 25px;
+      padding: 14px 24px;
+      background-color: #40916c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #1b4332;
+    }
+
+    .results {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .card {
+      flex: 1;
+      min-width: 300px;
+      background: #d8f3dc;
+      padding: 20px;
+      border-left: 6px solid #52b788;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: #2d6a4f;
+    }
+
+    .card p {
+      margin: 10px 0;
+      font-size: 15px;
+    }
+
+    canvas {
+      display: block;
+      max-width: 700px;
+      margin: 40px auto 0;
+    }
+
+    .chatbox {
+      margin-top: 50px;
+      border-top: 2px solid #ccc;
+      padding-top: 30px;
+    }
+
+    .chat-log {
+      background: #f8f9fa;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+    }
+
+    .chat-log p {
+      margin: 8px 0;
+    }
+
+    .chat-log .user {
+      font-weight: bold;
+      color: #1b4332;
+    }
+
+    .chat-log .bot {
+      margin-left: 20px;
+      color: #40916c;
+    }
+
+    .chatbox input {
+      width: 80%;
+      padding: 10px;
+      margin-right: 5px;
+      border-radius: 8px;
+      border: 1px solid #aaa;
+    }
+
+    .chatbox button {
+      padding: 10px 16px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🌱 Sustainable Farming AI Recommendation Tool</h1>
+
+  <!-- Input fields -->
+  <label>Name</label>
+  <input id="name" type="text">
+  <label>Soil pH</label>
+  <input id="soil_ph" type="number" step="0.1">
+  <label>Soil Moisture (%)</label>
+  <input id="moisture" type="number" step="0.1">
+  <label>Temperature (°C)</label>
+  <input id="temperature" type="number" step="0.1">
+  <label>Rainfall (mm)</label>
+  <input id="rainfall" type="number" step="0.1">
+  <label>Market Price per ton</label>
+  <input id="price" type="number">
+  <label>Demand Index</label>
+  <input id="demand" type="number" step="0.1">
+  <label>Consumer Trend Index</label>
+  <input id="trend" type="number" step="0.1">
+
+  <button onclick="getRecommendation()">Get Recommendation 🌾</button>
+
+  <!-- Results -->
+  <div class="results" id="output"></div>
+  <canvas id="cropChart" height="100"></canvas>
+
+  <!-- Chatbot Section -->
+  <div class="chatbox">
+    <h2>💬 Ask the AI Chatbot</h2>
+    <div class="chat-log" id="chatLog"></div>
+    <input id="chatInput" type="text" placeholder="Ask something..." />
+    <button onclick="sendToChatbot()">Send</button>
+  </div>
+</div>
+
+<script>
+  let myChart = null;
+
+  function getRecommendation() {
+    const data = {
+      name: document.getElementById("name").value,
+      Soil_pH: parseFloat(document.getElementById("soil_ph").value),
+      Soil_Moisture: parseFloat(document.getElementById("moisture").value),
+      Temperature_C: parseFloat(document.getElementById("temperature").value),
+      Rainfall_mm: parseFloat(document.getElementById("rainfall").value),
+      Market_Price_per_ton: parseFloat(document.getElementById("price").value),
+      Demand_Index: parseFloat(document.getElementById("demand").value),
+      Consumer_Trend_Index: parseFloat(document.getElementById("trend").value)
+    };
+
+    fetch("http://127.0.0.1:5000/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(res => {
+      const rec = res.recommendation;
+      const topCrops = rec.market_advice?.top_3_profitable_crops || [];
+
+      document.getElementById("output").innerHTML = `
+        <div class="card">
+          <h3>🌿 Environmental Advice</h3>
+          <p><strong>Recommended Crop:</strong> ${rec.environmental_advice?.recommended_crop || "N/A"}</p>
+          <p><em>${rec.environmental_advice?.tip || "No tip provided."}</em></p>
+        </div>
+        <div class="card">
+          <h3>💰 Market Advice</h3>
+          <p><strong>Most Profitable Crop:</strong> ${rec.market_advice?.most_profitable_crop || "N/A"}</p>
+          <p><strong>Top 3 Crops:</strong> ${topCrops.join(", ")}</p>
+          <p><em>${rec.market_advice?.note || "No market note provided."}</em></p>
+        </div>
+      `;
+
+      const ctx = document.getElementById('cropChart').getContext('2d');
+      const dummyScores = [80, 65, 50];
+
+      if (myChart) {
+        myChart.destroy();
+      }
+
+      myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: topCrops,
+          datasets: [{
+            label: 'Profit Potential (%)',
+            data: dummyScores,
+            backgroundColor: ['#52b788', '#74c69d', '#95d5b2']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: 'Top 3 Profitable Crops 🌾'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100
+            }
+          }
+        }
+      });
+    })
+    .catch(async err => {
+      const errorText = err.message || "Unknown error";
+      document.getElementById("output").innerHTML = `
+        <div class="card"><p>❌ Error: ${errorText}</p></div>
+      `;
+      console.error("Fetch error:", err);
+    });
+  }
+
+  function sendToChatbot() {
+    const message = document.getElementById("chatInput").value;
+    if (!message) return;
+
+    const chatLog = document.getElementById("chatLog");
+    chatLog.innerHTML += `<p class="user">You: ${message}</p>`;
+
+    fetch("http://127.0.0.1:5001/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+    })
+    .then(res => res.json())
+    .then(res => {
+      chatLog.innerHTML += `<p class="bot">Bot: ${res.reply}</p>`;
+      document.getElementById("chatInput").value = "";
+      chatLog.scrollTop = chatLog.scrollHeight;
+    })
+    .catch(err => {
+      chatLog.innerHTML += `<p class="bot">❌ Error reaching chatbot.</p>`;
+      console.error("Chatbot error:", err);
+    });
+  }
+</script>
+
+</body>
+</html>
